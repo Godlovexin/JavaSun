@@ -22,9 +22,13 @@
 	1. [- Map](#--map)
 1. [集合的选用](#集合的选用)
 1. [集合的常用方法](#集合的常用方法)
+1. [为什么用HashMap?](#为什么用HashMap?)
+2. [HashMap中hash函数怎么是是实现的?](#HashMap中hash函数怎么是是实现的?)
+3. [拉链法导致的链表过深问题为什么不用二叉查找树代替，而选择红黑树？为什么不一直使用红黑树？](#拉链法导致的链表过深问题为什么不用二叉查找树代替，而选择红黑树？为什么不一直使用红黑树？)
 
 <!-- /MarkdownTOC -->
 
+![集合框架图](https://ask.qcloudimg.com/http-save/yehe-3541135/t32tqzta3v.png?imageView2/2/w/1620)
 
 ## <font face="楷体">List，Set,Map三者的区别及总结</font>
 - **List：对付顺序的好帮手**
@@ -40,7 +44,7 @@
   
 
 ## <font face="楷体">Arraylist 与 LinkedList 区别</font>
-Arraylist底层使用的是数组（存读数据效率高，插入删除特定位置效率低），LinkedList 底层使用的是双向链表数据结构（插入，删除效率特别高）（JDK1.6之前为循环链表，JDK1.7取消了循环。注意双向链表和双向循环链表的区别：）； 详细可阅读JDK1.7-LinkedList循环链表优化。学过数据结构这门课后我们就知道采用链表存储，插入，删除元素时间复杂度不受元素位置的影响，都是近似O（1）而数组为近似O（n），因此当数据特别多，而且经常需要插入删除元素时建议选用LinkedList.一般程序只用Arraylist就够用了，因为一般数据量都不会蛮大，Arraylist是使用最多的集合类。
+Arraylist底层使用的是数组（存读数据效率高，插入删除特定位置效率低），LinkedList 底层使用的是双向链表数据结构（插入，删除效率特别高）（JDK1.6之前为循环链表，JDK1.7取消了循环。注意双向链表和双向循环链表的区别：）； 详细可阅读JDK1.7-LinkedList循环链表优化。学过数据结构这门课后我们就知道采用链表存储，插入，删除元素时间复杂度不受元素位置的影响，都是近似O（1）而数组为近似O（n），因此当数据特别多，而且经常需要插入删除元素时建议选用LinkedList。一般程序只用Arraylist就够用了，因为一般数据量都不会蛮大，Arraylist是使用最多的集合类。
 
 ## <font face="楷体">ArrayList 与 Vector 区别</font>
 Vector类的所有方法都是同步的。可以由两个线程安全地访问一个Vector对象、但是一个线程访问Vector
@@ -55,8 +59,7 @@ Vector类的所有方法都是同步的。可以由两个线程安全地访问�
 Hashtable和HashMap有几个主要的不同：线程安全以及速度。仅在你需要完全的线程安全的时候使用Hashtable，而如果你使用Java5或以上的话，请使用ConcurrentHashMap吧
 
 ## <font face="楷体">HashSet 和 HashMap 区别</font>
-![HashSet 和 HashMap 区别](https://user-gold-cdn.xitu.io/2018/3/2/161e717d734f3b23?w=896&h=363&f=jpeg&s=205536)
-
+[HashSet 和 HashMap 区别](https://user-gold-cdn.xitu.io/2018/3/2/161e717d734f3b23?w=896&h=363&f=jpeg&s=205536)
 ## <font face="楷体">HashMap 和 ConcurrentHashMap 的区别</font>
 [HashMap与ConcurrentHashMap的区别](https://blog.csdn.net/xuefeng0707/article/details/40834595)
 
@@ -340,6 +343,36 @@ public class MethodDemo {
 2018/3/11更新
 ## <font face="楷体">集合的常用方法</font>
 今天下午无意看见一道某大厂的面试题，面试题的内容就是问你某一个集合常见的方法有哪些。虽然平时也经常见到这些集合，但是猛一下让我想某一个集合的常用的方法难免会有遗漏或者与其他集合搞混，所以建议大家还是照着API文档把常见的那几个集合的常用方法看一看。
+## <font face="楷体">为什么用HashMap?</font>
+- HashMap是一个散列桶（数组和链表），它存储的内容是键值对(key-value)映射
+- HashMap采用了数组和链表的数据结构，能在查询和修改方便继承了数组的线性查找和链表的寻址修改
+- HashMap是非synchronized，所以HashMap很快
+- HashMap可以接受null键和值，而Hashtable则不能（原因就是equlas()方法需要对象，因为HashMap是后出的API经过处理才可以）
+***By Sun---2019.03.11***
+## <font face="楷体">HashMap中hash函数怎么是是实现的?</font>
+我们首先想到的就是把hashcode对数组长度取模运算，这样一来，元素的分布相对来说是比较均匀的。但是，“模”运算的消耗还是比较大的，能不能找一种更快速，消耗更小的方式，我们来看看JDK1.8的源码是怎么做的:
+```	
+static final int hash(Object key) {
+if (key == null){
+    return 0;
+}
+ int h;
+ h=key.hashCode()；返回散列值也就是hashcode
+  // ^ ：按位异或
+  // >>>:无符号右移，忽略符号位，空位都以0补齐
+  //其中n是数组的长度，即Map的数组部分初始化长度
+ return  (n-1)&(h ^ (h >>> 16));
+}
+```
+![计算过程](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupW2jx3VRv6YbV8LibTl35SgfgibTJTZtd46Svb3BG8rdPdYf6JJYibhR9CQK5aTCJGPiaSKSmKLDd4KDA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+简单来说就是：
+1. 高16bt不变，低16bit和高16bit做了一个异或(得到的HASHCODE转化为32位的二进制，前16位和后16位低16bit和高16bit做了一个异或)
+2. (n-1)&hash=->得到下标
+***By Sun---2019.03.11***
+## <font face="楷体">拉链法导致的链表过深问题为什么不用二叉查找树代替，而选择红黑树？为什么不一直使用红黑树?</font>
+之所以选择红黑树是为了解决二叉查找树的缺陷，二叉查找树在特殊情况下会变成一条线性结构（这就跟原来使用链表结构一样了，造成很深的问题），遍历查找会非常慢。而红黑树在插入新数据后可能需要通过左旋，右旋、变色这些操作来保持平衡，引入红黑树就是为了查找数据快，解决链表查询深度的问题，我们知道红黑树属于平衡二叉树，但是为了保持“平衡”是需要付出代价的，但是该代价所损耗的资源要比遍历线性链表要少，所以当长度大于8的时候，会使用红黑树，如果链表长度很短的话，根本不需要引入红黑树，引入反而会慢。
+***By Sun---2019.03.11***
+
 
 会持续更新。。。
 
